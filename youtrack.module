@@ -94,7 +94,7 @@ function youtrack_menu() {
 }
 
 function youtrack_rest_get_issue($id) {
-  $result = _youtrack_rest_request('rest/issue/' . $id);
+  $result = _youtrack_rest_request('rest/issue/' . $id, array(),'GET');
   if ($result->OK) {
     return $result->data;
   }
@@ -108,14 +108,14 @@ function youtrack_rest_get_projects($for_select = FALSE, $refresh = FALSE) {
   }
   $projects_detail = variable_get('youtrack_projects', array());
   if ($refresh || empty($projects_detail)) {
-    $result = _youtrack_rest_request('rest/admin/project');
+    $result = _youtrack_rest_request('rest/admin/project', array(), 'GET');
     if (is_object($result) && $result->OK) { /* Added is_object to prevent php warning in drupal if connection fails */
       $xml = new SimpleXMLElement($result->data);
       foreach ($xml->xpath('/projectRefs/project') as $pid) {
         foreach ($pid->attributes() as $attr) {
           if ($attr->getName() == 'id') {
             $id = (string)$attr;
-            $result = _youtrack_rest_request('rest/admin/project/' . $id);
+            $result = _youtrack_rest_request('rest/admin/project/' . $id, array(), 'GET');
             if ($result->OK) {
               $xml = new SimpleXMLElement($result->data);
               foreach ($xml->attributes() as $attr) {
@@ -125,14 +125,14 @@ function youtrack_rest_get_projects($for_select = FALSE, $refresh = FALSE) {
                     'name' => (string) $attr,
                     'fields' => array(),
                   );
-                  $result = _youtrack_rest_request('rest/admin/project/' . $id . '/customfield');
+                  $result = _youtrack_rest_request('rest/admin/project/' . $id . '/customfield', array(), 'GET');
                   if ($result->OK) {
                     $xml = new SimpleXMLElement($result->data);
                     foreach ($xml->xpath('/projectCustomFieldRefs/projectCustomField') as $pcf) {
                       foreach ($pcf->attributes() as $attr) {
                         if ($attr->getName() == 'name') {
                           $name = (string) $attr;
-                          $result = _youtrack_rest_request('rest/admin/project/' . $id . '/customfield/' . $name);
+                          $result = _youtrack_rest_request('rest/admin/project/' . $id . '/customfield/' . $name, array(), 'GET');
                           if ($result->OK) {
                             $xml = new SimpleXMLElement($result->data);
                             $type = 'enum';
@@ -185,7 +185,7 @@ function youtrack_rest_get_bundle($name, $type) {
 }
 
 function youtrack_rest_get_enumeration_bundle($name) {
-  $result = _youtrack_rest_request('rest/admin/customfield/bundle/' . $name);
+  $result = _youtrack_rest_request('rest/admin/customfield/bundle/' . $name, array(), 'GET');
   if ($result->OK) {
     $xml = new SimpleXMLElement($result->data);
     $enum = array();
@@ -198,7 +198,7 @@ function youtrack_rest_get_enumeration_bundle($name) {
 }
 
 function youtrack_rest_get_state_bundles() {
-  $result = _youtrack_rest_request('rest/admin/customfield/stateBundle');
+  $result = _youtrack_rest_request('rest/admin/customfield/stateBundle', array(), 'GET');
   if ($result->OK) {
     $xml = new SimpleXMLElement($result->data);
     $bundles = array();
@@ -215,7 +215,7 @@ function youtrack_rest_get_state_bundles() {
 }
 
 function youtrack_rest_get_state_bundle($name) {
-  $result = _youtrack_rest_request('rest/admin/customfield/stateBundle/' . $name);
+  $result = _youtrack_rest_request('rest/admin/customfield/stateBundle/' . $name, array(), 'GET');
   if ($result->OK) {
     $xml = new SimpleXMLElement($result->data);
     $states = array();
@@ -324,7 +324,8 @@ function _youtrack_login() {
  * @return null|object
  */
 function _youtrack_rest_request($path, $data = array(), $method, $include_cookie = TRUE, $expect_code = 200, $expect_status = 'OK') {
-	//removed = 'GET' from $method in above line... it was tripping up connections
+	//removed = 'GET' from $method in above line... it was tripping up connection
+if (!isset($method)){ $method = 'POST'; } // Some functions are not passing method... Drupal doesn't like this!
   if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
     $url = $path;
   }
