@@ -30,6 +30,19 @@ function youtrack_issue($severity, $type, $message, $record, $alert = FALSE) {
   );
 }
 
+
+/** Allow for custom permissions...
+ * Implements hook_permission().
+ */
+function youtrack_permission() {
+  return array(
+    'administer your module' => array(
+      'title' => t('Administer permission for your module'),
+      'description' => t('Allow access to YouTrack connector settings.'),
+    ),
+  );
+}
+
 /**
  * Implements hook_watchdog().
  */
@@ -76,7 +89,7 @@ function youtrack_mail_alter(&$message) {
   }
 }
 
-/**
+/** Added custom permissions...
  * Implements hook_menu().
  */
 function youtrack_menu() {
@@ -86,7 +99,7 @@ function youtrack_menu() {
     'title' => 'YouTrack',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('youtrack_admin_settings'),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer youtrack'),
     'file' => 'youtrack.admin.inc',
   );
 
@@ -324,8 +337,7 @@ function _youtrack_login() {
  * @return null|object
  */
 function _youtrack_rest_request($path, $data = array(), $method, $include_cookie = TRUE, $expect_code = 200, $expect_status = 'OK') {
-	//removed = 'GET' from $method in above line... it was tripping up connection
-if (!isset($method)){ $method = 'POST'; } // Some functions are not passing method... Drupal doesn't like this!
+	//removed = 'GET' from $method in above line... it was tripping up connection at one point, but now all function calls are specifying method for consistency... Let me know if you think it's better the other way...
   if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
     $url = $path;
   }
@@ -337,7 +349,7 @@ if (!isset($method)){ $method = 'POST'; } // Some functions are not passing meth
     'method' => $method,
     'data' => drupal_http_build_query($data),
     'headers' => array(
-	    /*'Connection' => 'keep-alive',   Causes REST request to fail do not use. */
+	    /*'Connection' => 'keep-alive',   Causes REST request to fail... do not use. */
       'Content-Type' => 'application/x-www-form-urlencoded',
     ),
   );
@@ -368,7 +380,7 @@ if (!isset($method)){ $method = 'POST'; } // Some functions are not passing meth
     }
   }
   $result->OK = ($result->code == $expect_code && strtolower($result->status_message) == strtolower($expect_status));
-  /*drupal_set_message(t($result->status_message)); Was used in order to see responses from YT Server. */
+  /*drupal_set_message(t($result->status_message)); // Was used in order to see responses from YT Server.*/
   return $result;
 }
 
